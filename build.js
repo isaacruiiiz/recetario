@@ -30,7 +30,7 @@ function parseFrontmatter(raw) {
   const meta = {};
   m[1].split(/\r?\n/).forEach((line) => {
     const i = line.indexOf(":");
-    if (i > 0) meta[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+    if (i > 0) meta[line.slice(0, i).trim()] = line.slice(i + 1).replace(/\s+#.*$/, "").trim();
   });
   return { meta, body: m[2] };
 }
@@ -78,42 +78,67 @@ function renderBlock(lines, checkable) {
   return html;
 }
 
+// ---------- Iconos ----------
+const svg = (inner, size = 20, extra = "") =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra}>${inner}</svg>`;
+const ICON = {
+  search: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', 22),
+  clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 20),
+  users: svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>', 20),
+  list: svg('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>', 20),
+  steps: svg('<path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>', 20),
+  arrow: svg('<path d="M5 12h14M13 6l6 6-6 6"/>', 18),
+  down: svg('<path d="M12 5v14M5 12l7 7 7-7"/>', 24),
+  copy: svg('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>', 18),
+  reset: svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>', 18),
+  back: svg('<path d="M19 12H5M11 18l-6-6 6-6"/>', 18),
+};
+const MARK =
+  '<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="currentColor"/><path d="M16 16a2 2 0 0 1 2 2 4 4 0 0 1-4 4 6 6 0 0 1-6-6 8 8 0 0 1 8-8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+const FAVICON =
+  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='#3d62b2'/><path d='M16 16a2 2 0 0 1 2 2 4 4 0 0 1-4 4 6 6 0 0 1-6-6 8 8 0 0 1 8-8' fill='none' stroke='#fff' stroke-width='2' stroke-linecap='round'/></svg>";
+
 // ---------- Plantillas ----------
 const FONTS =
   '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
-  '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;600&display=swap" rel="stylesheet">';
+  '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;500;600&display=swap" rel="stylesheet">';
 
-const page = ({ title, description, body, script }) => `<!doctype html>
+const page = ({ title, description, body }) => `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <meta name="theme-color" content="#ffffff">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(description)}">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,${encodeURIComponent(FAVICON)}">
 ${FONTS}
 <link rel="stylesheet" href="${BASE}/styles.css">
+<script>document.documentElement.classList.add("js")</script>
 </head>
 <body>
 ${body}
-${script ? `<script src="${BASE}/app.js" defer></script>` : ""}
+<script src="${BASE}/app.js" defer></script>
 </body>
 </html>
 `;
 
-const ICON_SEARCH =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3d62b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
-const ICON_DOWN =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 512 512" aria-hidden="true"><path fill="none" stroke="#3d62b2" stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="m112 268l144 144l144-144M256 392V100"/></svg>';
-
-const nav = (home) => `<nav class="nav"><div class="wrap">
-<a class="brand" href="${BASE}/">${SITE}</a>
-${home ? "" : `<a class="ghost" href="${BASE}/#recetas">Todas las recetas</a>`}
+const nav = (home) => `<nav class="nav" id="nav"><div class="wrap">
+<a class="brand" href="${BASE}/">${MARK}<span>${SITE}</span></a>
+<a class="ghost" href="${BASE}/#recetas">Recetas</a>
 </div></nav>`;
 
-const footer = `<footer class="footer"><div class="wrap">© ${new Date().getFullYear()} Isaac · Hecho con cariño y mantequilla</div></footer>`;
+const footer = `<footer class="footer"><div class="wrap">
+<a class="brand small" href="${BASE}/">${MARK}<span>${SITE}</span></a>
+<span>© ${new Date().getFullYear()} Isaac · Hecho con cariño y mantequilla</span>
+</div></footer>`;
 
 // ---------- Lectura de recetas ----------
+const countLines = (lines, re) => lines.filter((l) => re.test(l)).length;
+
 function loadRecipes() {
   if (!fs.existsSync(RECETAS)) return [];
   return fs
@@ -141,6 +166,8 @@ function loadRecipes() {
         fecha: meta.fecha || "",
         ingr,
         resto,
+        nIngr: ingr ? countLines(ingr.lines, /^[-*]\s+/) : 0,
+        nPasos: resto.reduce((n, s) => n + countLines(s.lines, /^\d+[.)]\s+/), 0),
         texto: norm([meta.titulo, meta.descripcion, meta.categoria, ingr ? ingr.lines.join(" ") : ""].join(" ")),
       };
     })
@@ -148,37 +175,83 @@ function loadRecipes() {
 }
 
 const thumbSrc = (r) => (r.imagen ? `${BASE}/${r.slug}/${r.imagen}` : "");
+const isVector = (r) => /\.svg$/i.test(r.imagen);
+const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
 // ---------- Páginas ----------
-function recipePage(r) {
-  const meta = [...r.categorias.map((c) => `<span class="tag">${esc(c)}</span>`)];
-  if (r.tiempo) meta.push(`<span class="tag">${esc(r.tiempo)}</span>`);
-  if (r.raciones) meta.push(`<span class="tag">${esc(r.raciones)}</span>`);
+function sectionHtml(s) {
+  const texto = s.lines.join(" ").trim();
+  if (!texto || /^pendiente/i.test(texto)) {
+    return `<section class="steps"><h2>${esc(s.title)}</h2><div class="pending"><strong>Todavía sin escribir.</strong> Esta receta aún no tiene el paso a paso; pronto estará aquí.</div></section>`;
+  }
+  return `<section class="steps"><h2>${esc(s.title)}</h2>${renderBlock(s.lines, false)}</section>`;
+}
+
+function fact(icon, label, value) {
+  return `<div class="fact">${icon}<div><small>${esc(label)}</small><b>${esc(value)}</b></div></div>`;
+}
+
+function recipePage(r, all) {
+  const tags = r.categorias.map((c) => `<span class="tag">${esc(c)}</span>`).join("");
+  const facts = [];
+  if (r.tiempo) facts.push(fact(ICON.clock, "Tiempo", r.tiempo));
+  if (r.raciones) facts.push(fact(ICON.users, "Raciones", r.raciones));
+  if (r.nIngr) facts.push(fact(ICON.list, "Ingredientes", String(r.nIngr)));
+  if (r.nPasos) facts.push(fact(ICON.steps, "Pasos", String(r.nPasos)));
+
   const cover = r.imagen
-    ? `<div class="wrap"><div class="cover"><img src="${esc(thumbSrc(r))}" alt="${esc(r.titulo)}"></div></div>`
+    ? `<div class="wrap"><div class="cover reveal"><img class="${isVector(r) ? "contain" : ""}" src="${esc(thumbSrc(r))}" alt="${esc(r.titulo)}"></div></div>`
     : "";
-  const ingr = r.ingr ? `<aside><h2>${esc(r.ingr.title)}</h2>${renderBlock(r.ingr.lines, true)}</aside>` : "";
-  const resto = r.resto.map((s) => `<section><h2>${esc(s.title)}</h2>${renderBlock(s.lines, false)}</section>`).join("");
+
+  const ingr = r.ingr
+    ? `<aside class="ingr reveal">
+<div class="ingr-head"><h2>${esc(r.ingr.title)}</h2><span class="progress" id="progreso" aria-live="polite">0/${r.nIngr}</span></div>
+<div class="bar" aria-hidden="true"><i id="barra"></i></div>
+${renderBlock(r.ingr.lines, true)}
+<div class="ingr-actions">
+<button class="btn" type="button" id="copiar">${ICON.copy}<span>Copiar lista</span></button>
+<button class="btn quiet" type="button" id="reiniciar">${ICON.reset}<span>Reiniciar</span></button>
+</div>
+</aside>`
+    : "";
+  const resto = r.resto.map(sectionHtml).join("");
+
+  const otras = all
+    .filter((o) => o.slug !== r.slug)
+    .sort((a, b) => b.categorias.filter((c) => r.categorias.includes(c)).length - a.categorias.filter((c) => r.categorias.includes(c)).length)
+    .slice(0, 3);
+  const mas = otras.length
+    ? `<section class="wrap more"><div class="list-head"><h2>Más recetas</h2></div><div class="grid">${otras.map(card).join("\n")}</div></section>`
+    : "";
+
   const body = `${nav(false)}
-<header class="recipe-head"><div class="wrap">
-<a class="back" href="${BASE}/#recetas"><span aria-hidden="true">←</span> Todas las recetas</a>
-<div class="meta">${meta.join("")}</div>
+<header class="wrap recipe-head">
+<a class="back" href="${BASE}/#recetas">${ICON.back}<span>Todas las recetas</span></a>
+<div class="meta">${tags}</div>
 <h1>${esc(r.titulo)}</h1>
 ${r.descripcion ? `<p class="lead">${esc(r.descripcion)}</p>` : ""}
-</div></header>
+${facts.length ? `<div class="facts">${facts.join("")}</div>` : ""}
+</header>
 ${cover}
-<main class="wrap recipe-body">${ingr}<div>${resto}</div></main>
+<main class="wrap recipe-body">${ingr}<div class="proceso">${resto}</div></main>
+${mas}
 ${footer}`;
-  return page({ title: `${r.titulo} · ${SITE}`, description: r.descripcion || r.titulo, body, script: true });
+  return page({ title: `${r.titulo} · ${SITE}`, description: r.descripcion || r.titulo, body });
 }
 
 function card(r) {
   const img = r.imagen ? `<img src="${esc(thumbSrc(r))}" alt="" loading="lazy">` : "";
-  return `<a class="card" href="${BASE}/${esc(r.slug)}/" data-buscar="${esc(r.texto)}" data-categorias="${esc(r.categorias.join("|"))}">
-<div class="thumb">${img}</div>
-<div class="meta">${r.categorias.map((c) => `<span class="tag">${esc(c)}</span>`).join("")}</div>
+  const tag = r.categorias[0] ? `<span class="tag tag-float">${esc(r.categorias[0])}</span>` : "";
+  const info = [];
+  if (r.tiempo) info.push(`<span class="info">${ICON.clock}${esc(r.tiempo)}</span>`);
+  if (r.nIngr) info.push(`<span class="info">${ICON.list}${plural(r.nIngr, "ingrediente", "ingredientes")}</span>`);
+  return `<a class="card reveal" href="${BASE}/${esc(r.slug)}/" data-buscar="${esc(r.texto)}" data-categorias="${esc(r.categorias.join("|"))}">
+<div class="thumb">${img}${tag}</div>
+<div class="card-body">
 <h3>${esc(r.titulo)}</h3>
 <p>${esc(r.descripcion)}</p>
+<div class="card-foot">${info.join("")}<span class="go">Ver receta ${ICON.arrow}</span></div>
+</div>
 </a>`;
 }
 
@@ -188,24 +261,28 @@ function homePage(recipes) {
     `<button class="chip" type="button" data-categoria="" aria-pressed="true">Todas</button>` +
     cats.map((c) => `<button class="chip" type="button" data-categoria="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join("");
   const body = `${nav(true)}
-<header class="wrap hero">
-<div>
+<header class="hero">
+<div class="wrap hero-inner">
+<div class="hero-copy">
+<p class="eyebrow"><span class="dot"></span>Recetario personal</p>
 <h1>Las Recetas de <em>Isaac</em></h1>
-<p class="tagline">Mi recetario personal: lo que cocino, con cantidades y paso a paso.</p>
+<p class="tagline">Lo que cocino en casa, con cantidades exactas y paso a paso. Sin florituras.</p>
+<p class="stats"><span><b>${recipes.length}</b> ${recipes.length === 1 ? "receta" : "recetas"}</span><span><b>${cats.length}</b> ${cats.length === 1 ? "categoría" : "categorías"}</span></p>
 </div>
 <div class="controls">
-<div class="search">${ICON_SEARCH}<label class="visually-hidden" for="buscador">Buscar recetas</label><input id="buscador" type="search" placeholder="Busca por nombre, ingrediente o tipo…" autocomplete="off"></div>
+<div class="search">${ICON.search}<label class="visually-hidden" for="buscador">Buscar recetas</label><input id="buscador" type="search" placeholder="Busca recetas o ingredientes…" autocomplete="off" enterkeyhint="search"></div>
 <div class="filters" role="group" aria-label="Filtrar por categoría">${chips}</div>
-<a class="glass scroll-down" href="#recetas" aria-label="Ir a las recetas"><span class="gl-t">${ICON_DOWN}</span></a>
+</div>
+<a class="glass scroll-down" href="#recetas" aria-label="Ir a las recetas">${ICON.down}</a>
 </div>
 </header>
 <main class="wrap" id="recetas">
-<div class="list-head"><h2>Recetas</h2><span class="count" id="contador" aria-live="polite">${recipes.length} recetas</span></div>
+<div class="list-head"><h2>Recetas</h2><span class="count" id="contador" aria-live="polite">${plural(recipes.length, "receta", "recetas")}</span></div>
 <div class="grid">${recipes.map(card).join("\n")}</div>
 <p class="empty" id="vacio" hidden>No hay recetas que coincidan con tu búsqueda.</p>
 </main>
 ${footer}`;
-  return page({ title: `${SITE}`, description: "Mi recetario personal: recetas con ingredientes y proceso.", body, script: true });
+  return page({ title: SITE, description: "Mi recetario personal: recetas con ingredientes y proceso.", body });
 }
 
 // ---------- Build ----------
@@ -213,6 +290,7 @@ fs.rmSync(DIST, { recursive: true, force: true });
 fs.mkdirSync(DIST, { recursive: true });
 fs.copyFileSync(path.join(SRC, "styles.css"), path.join(DIST, "styles.css"));
 fs.copyFileSync(path.join(SRC, "app.js"), path.join(DIST, "app.js"));
+fs.writeFileSync(path.join(DIST, ".nojekyll"), "");
 
 const recipes = loadRecipes();
 recipes.forEach((r) => {
@@ -222,7 +300,12 @@ recipes.forEach((r) => {
   fs.readdirSync(r.dir).forEach((f) => {
     if (f !== "receta.md") fs.copyFileSync(path.join(r.dir, f), path.join(out, f));
   });
-  fs.writeFileSync(path.join(out, "index.html"), recipePage(r));
+  fs.writeFileSync(path.join(out, "index.html"), recipePage(r, recipes));
 });
 fs.writeFileSync(path.join(DIST, "index.html"), homePage(recipes));
+fs.writeFileSync(path.join(DIST, "404.html"), page({
+  title: `No encontrada · ${SITE}`,
+  description: "Página no encontrada",
+  body: `${nav(false)}<main class="wrap"><div class="notfound"><h1>Esta receta<br>no existe <em>(aún)</em></h1><p class="tagline">Puede que el enlace esté mal escrito.</p><a class="btn solid" href="${BASE}/">Volver al recetario</a></div></main>${footer}`,
+}));
 console.log(`✔ ${recipes.length} receta(s) generadas en dist/`);
