@@ -37,7 +37,11 @@ npm run build   # genera dist/
 npm run dev     # build + servidor local
 ```
 
-## Cloudflare Pages
+## GitHub Pages
+
+El workflow `.github/workflows/pages.yml` genera el sitio con `BASE_PATH=/recetario` y lo publica en cada push a `main`. En el repo: Settings → Pages → Source: **GitHub Actions**.
+
+## Cloudflare Pages (alternativa)
 
 - Build command: `node build.js`
 - Build output directory: `dist`

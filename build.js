@@ -10,6 +10,8 @@ const RECETAS = path.join(ROOT, "recetas");
 const SRC = path.join(ROOT, "src");
 const DIST = path.join(ROOT, "dist");
 const SITE = "Las Recetas de Isaac";
+// Ruta base para GitHub Pages de proyecto (p. ej. BASE_PATH=/recetario). Vacía = raíz del dominio.
+const BASE = (process.env.BASE_PATH || "").replace(/\/+$/, "");
 
 const esc = (s) =>
   String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -90,11 +92,11 @@ const page = ({ title, description, body, script }) => `<!doctype html>
 <meta name="description" content="${esc(description)}">
 <meta name="theme-color" content="#ffffff">
 ${FONTS}
-<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="${BASE}/styles.css">
 </head>
 <body>
 ${body}
-${script ? '<script src="/app.js" defer></script>' : ""}
+${script ? `<script src="${BASE}/app.js" defer></script>` : ""}
 </body>
 </html>
 `;
@@ -105,8 +107,8 @@ const ICON_DOWN =
   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 512 512" aria-hidden="true"><path fill="none" stroke="#3d62b2" stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="m112 268l144 144l144-144M256 392V100"/></svg>';
 
 const nav = (home) => `<nav class="nav"><div class="wrap">
-<a class="brand" href="/">${SITE}</a>
-${home ? "" : '<a class="ghost" href="/#recetas">Todas las recetas</a>'}
+<a class="brand" href="${BASE}/">${SITE}</a>
+${home ? "" : `<a class="ghost" href="${BASE}/#recetas">Todas las recetas</a>`}
 </div></nav>`;
 
 const footer = `<footer class="footer"><div class="wrap">© ${new Date().getFullYear()} Isaac · Hecho con cariño y mantequilla</div></footer>`;
@@ -145,7 +147,7 @@ function loadRecipes() {
     .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || "") || a.titulo.localeCompare(b.titulo, "es"));
 }
 
-const thumbSrc = (r) => (r.imagen ? `/${r.slug}/${r.imagen}` : "");
+const thumbSrc = (r) => (r.imagen ? `${BASE}/${r.slug}/${r.imagen}` : "");
 
 // ---------- Páginas ----------
 function recipePage(r) {
@@ -159,7 +161,7 @@ function recipePage(r) {
   const resto = r.resto.map((s) => `<section><h2>${esc(s.title)}</h2>${renderBlock(s.lines, false)}</section>`).join("");
   const body = `${nav(false)}
 <header class="recipe-head"><div class="wrap">
-<a class="back" href="/#recetas"><span aria-hidden="true">←</span> Todas las recetas</a>
+<a class="back" href="${BASE}/#recetas"><span aria-hidden="true">←</span> Todas las recetas</a>
 <div class="meta">${meta.join("")}</div>
 <h1>${esc(r.titulo)}</h1>
 ${r.descripcion ? `<p class="lead">${esc(r.descripcion)}</p>` : ""}
@@ -172,7 +174,7 @@ ${footer}`;
 
 function card(r) {
   const img = r.imagen ? `<img src="${esc(thumbSrc(r))}" alt="" loading="lazy">` : "";
-  return `<a class="card" href="/${esc(r.slug)}/" data-buscar="${esc(r.texto)}" data-categorias="${esc(r.categorias.join("|"))}">
+  return `<a class="card" href="${BASE}/${esc(r.slug)}/" data-buscar="${esc(r.texto)}" data-categorias="${esc(r.categorias.join("|"))}">
 <div class="thumb">${img}</div>
 <div class="meta">${r.categorias.map((c) => `<span class="tag">${esc(c)}</span>`).join("")}</div>
 <h3>${esc(r.titulo)}</h3>
